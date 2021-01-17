@@ -14,4 +14,7 @@ import org.springframework.util.MultiValueMap;
 public interface AuthApi {
     @POST("/auth/token")
     LoginResponse login(@Body MultiValueMap<String, String> request);
+
+    @POST("/auth/token")
+    LoginResponse refreshToken(@Body MultiValueMap<String, String> request);
 }

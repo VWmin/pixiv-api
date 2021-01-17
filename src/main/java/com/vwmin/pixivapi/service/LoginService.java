@@ -18,9 +18,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * @author vwmin
@@ -31,8 +29,12 @@ import java.util.Map;
 @Service
 public class LoginService {
     private final AuthApi authApi;
+    private LoginResponse response;
+
     public LoginService(AuthApi authApi){
         this.authApi = authApi;
+        this.response = login();
+        log.info("login success, get token >>> " + response.getResponse().getAccess_token());
     }
 
     // bodies
@@ -40,6 +42,7 @@ public class LoginService {
     private static final String CLIENT_SECRET = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj";
     private static final String DEVICE_TOKEN = "pixiv";
     private static final String TYPE_PASSWORD = "password";
+    private static final String TYPE_REFRESH = "refresh_token";
     private static final String USERNAME = "787236989";
     private static final String PASSWORD = "1903215898";
 
@@ -54,20 +57,33 @@ public class LoginService {
     private static final String SALT = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c";
 
 
-    public LoginResponse login(){
-        return authApi.login(loginRequestBody());
+    public String getAccessToken(){
+        return response.getResponse().getAccess_token();
     }
 
-    private static MultiValueMap<String, String> loginRequestBody(){
+    public LoginResponse login(){
+        MultiValueMap<String, String> body = basicLoginRequestBody();
+        body.add("grant_type", TYPE_PASSWORD);
+        body.add("username", USERNAME);
+        body.add("password", PASSWORD);
+        return authApi.login(body);
+    }
+
+    public LoginResponse refreshToken(){
+        MultiValueMap<String, String> body = basicLoginRequestBody();
+        body.add("grant_type", TYPE_REFRESH);
+        body.add("refresh_token", response.getResponse().getRefresh_token());
+        response = authApi.refreshToken(body);
+        return response;
+    }
+
+    private static MultiValueMap<String, String> basicLoginRequestBody(){
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>(8);
         body.add("client_id", CLIENT_ID);
         body.add("client_secret", CLIENT_SECRET);
         body.add("device_token", DEVICE_TOKEN);
         body.add("get_secure_url", "true");
-        body.add("grant_type", TYPE_PASSWORD);
         body.add("include_policy", "true");
-        body.add("username", USERNAME);
-        body.add("password", PASSWORD);
         return body;
     }
 
@@ -88,7 +104,7 @@ public class LoginService {
             headers.add("User-Agent", USER_AGENT);
             headers.add("Accept-Language", ACCEPT_LANGUAGE);
 
-            log.info("request body >>> " + new String(body, StandardCharsets.UTF_8));
+//            log.info("request body >>> " + new String(body, StandardCharsets.UTF_8));
 
             return execution.execute(request, body);
         }

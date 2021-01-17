@@ -1,10 +1,14 @@
 package com.vwmin.pixivapi;
 
+import com.vwmin.pixivapi.controller.LogInterceptor;
+import com.vwmin.pixivapi.service.AppService;
 import com.vwmin.pixivapi.service.LoginService;
 import com.vwmin.restproxy.RestProxy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * @author vwmin
@@ -12,7 +16,11 @@ import org.springframework.web.client.RestTemplate;
  * @date 2021/1/16 19:41
  */
 @Component
-public class AppConfig {
+public class AppConfig implements WebMvcConfigurer {
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new LogInterceptor()).addPathPatterns("/**");
+    }
 
     @Bean
     public AuthApi authApi(){
@@ -23,8 +31,10 @@ public class AppConfig {
     }
 
     @Bean
-    public AppApi appApi(){
+    public AppApi appApi(LoginService loginService){
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.getInterceptors().add(new AppService.AppAccessRightInterceptor(loginService));
         String url = "https://app-api.pixiv.net";
-        return new RestProxy<>(url, AppApi.class, new RestTemplate()).getApi();
+        return new RestProxy<>(url, AppApi.class, restTemplate).getApi();
     }
 }
