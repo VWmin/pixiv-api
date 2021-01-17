@@ -10,6 +10,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -27,6 +29,7 @@ import java.util.Locale;
  */
 @Slf4j
 @Service
+@EnableScheduling
 public class LoginService {
     private final AuthApi authApi;
     private LoginResponse response;
@@ -75,6 +78,12 @@ public class LoginService {
         body.add("refresh_token", response.getResponse().getRefresh_token());
         response = authApi.refreshToken(body);
         return response;
+    }
+
+    @Scheduled(cron = "0 0 * * * ?")
+    private void autoRefresh(){
+        log.info("trying auto refresh.");
+        refreshToken();
     }
 
     private static MultiValueMap<String, String> basicLoginRequestBody(){
