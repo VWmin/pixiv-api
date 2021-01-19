@@ -1,4 +1,4 @@
-package com.vwmin.pixivapi;
+package com.vwmin.pixivapi.service;
 
 import com.vwmin.pixivapi.response.IllustResponse;
 import com.vwmin.pixivapi.response.ListIllustResponse;

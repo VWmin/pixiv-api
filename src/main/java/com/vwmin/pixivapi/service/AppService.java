@@ -1,6 +1,5 @@
 package com.vwmin.pixivapi.service;
 
-import com.vwmin.pixivapi.AppApi;
 import com.vwmin.pixivapi.response.IllustResponse;
 import com.vwmin.pixivapi.response.ListIllustResponse;
 import com.vwmin.pixivapi.response.UserResponse;
@@ -20,11 +19,9 @@ import java.io.IOException;
  */
 @Service
 public class AppService {
-    private final LoginService loginService;
     private final AppApi appApi;
 
     public AppService(LoginService loginService, AppApi appApi) {
-        this.loginService = loginService;
         this.appApi = appApi;
     }
 

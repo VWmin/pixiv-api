@@ -1,6 +1,5 @@
 package com.vwmin.pixivapi.service;
 
-import com.vwmin.pixivapi.AuthApi;
 import com.vwmin.pixivapi.response.LoginResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -17,7 +16,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;

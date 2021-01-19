@@ -1,7 +1,9 @@
 package com.vwmin.pixivapi;
 
 import com.vwmin.pixivapi.controller.LogInterceptor;
+import com.vwmin.pixivapi.service.AppApi;
 import com.vwmin.pixivapi.service.AppService;
+import com.vwmin.pixivapi.service.AuthApi;
 import com.vwmin.pixivapi.service.LoginService;
 import com.vwmin.restproxy.RestProxy;
 import org.springframework.context.annotation.Bean;
