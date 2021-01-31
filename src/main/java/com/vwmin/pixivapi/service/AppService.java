@@ -3,14 +3,8 @@ package com.vwmin.pixivapi.service;
 import com.vwmin.pixivapi.response.IllustResponse;
 import com.vwmin.pixivapi.response.ListIllustResponse;
 import com.vwmin.pixivapi.response.UserResponse;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpRequest;
-import org.springframework.http.client.ClientHttpRequestExecution;
-import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.io.IOException;
 
 /**
  * @author vwmin
@@ -20,9 +14,11 @@ import java.io.IOException;
 @Service
 public class AppService {
     private final AppApi appApi;
+    private final AppAccessRightInterceptor interceptor;
 
-    public AppService(LoginService loginService, AppApi appApi) {
+    public AppService(AppApi appApi, AppAccessRightInterceptor interceptor) {
         this.appApi = appApi;
+        this.interceptor = interceptor;
     }
 
 
@@ -47,7 +43,8 @@ public class AppService {
         return null;
     }
 
-    public ListIllustResponse getNewWorks(String restrict) {
+    public ListIllustResponse getNewWorks(String restrict, String username) {
+        interceptor.setUser(username);
         return appApi.getNewWorks(restrict);
     }
 
@@ -60,19 +57,21 @@ public class AppService {
     }
 
 
-    public static class AppAccessRightInterceptor implements ClientHttpRequestInterceptor{
 
-        private final LoginService loginService;
-
-        public AppAccessRightInterceptor(LoginService loginService){
-            this.loginService = loginService;
-        }
-
-        @Override
-        public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
-            HttpHeaders headers = request.getHeaders();
-            headers.add("Authorization", "Bearer "+ loginService.getAccessToken());
-            return execution.execute(request, body);
-        }
-    }
+//    public static class AppAccessRightInterceptor implements ClientHttpRequestInterceptor{
+//
+//        private final LoginService loginService;
+//
+//        public AppAccessRightInterceptor(LoginService loginService){
+//            this.loginService = loginService;
+//        }
+//
+//
+//        @Override
+//        public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+//            HttpHeaders headers = request.getHeaders();
+//            headers.add("Authorization", "Bearer "+ loginService.getAccessToken());
+//            return execution.execute(request, body);
+//        }
+//    }
 }

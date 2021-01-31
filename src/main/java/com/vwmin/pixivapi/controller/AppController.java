@@ -34,7 +34,6 @@ public class AppController {
         return appService.getRank(mode, date);
     }
 
-
     @GetMapping("/illust/detail")
     public IllustResponse getIllustById(@RequestParam Long illustId){
         return appService.getIllustById(illustId);
@@ -59,8 +58,9 @@ public class AppController {
 
 
     @GetMapping("/illust/new")
-    public ListIllustResponse getNewWorks(@RequestParam String restrict){
-        return appService.getNewWorks(restrict);
+    public ListIllustResponse getNewWorks(@RequestParam String restrict,
+                                          @RequestParam String username){
+        return appService.getNewWorks(restrict, username);
     }
 
     @GetMapping("/illust/bookmark")
@@ -75,10 +75,17 @@ public class AppController {
         return appService.trend();
     }
 
+    @GetMapping("/login")
+    public String login(@RequestParam String username,
+                        @RequestParam String password){
+        LoginResponse login = loginService.login(username, password);
+        return login.getResponse().getAccess_token();
+    }
+
 
     @GetMapping("/refresh")
     public String refresh(){
-        LoginResponse loginResponse = loginService.refreshToken();
+        LoginResponse loginResponse = loginService.refreshTokenDefault();
         return loginResponse.getResponse().getAccess_token();
     }
 }

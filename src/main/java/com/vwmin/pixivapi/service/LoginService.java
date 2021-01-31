@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author vwmin
@@ -30,12 +32,11 @@ import java.util.Locale;
 @EnableScheduling
 public class LoginService {
     private final AuthApi authApi;
-    private LoginResponse response;
+    private final Map<String, LoginResponse> loginSession = new ConcurrentHashMap<>();
 
     public LoginService(AuthApi authApi){
         this.authApi = authApi;
-        this.response = login();
-        log.info("login success, get token >>> " + response.getResponse().getAccess_token());
+        login(USERNAME, PASSWORD); //登录默认账号
     }
 
     // bodies
@@ -58,30 +59,56 @@ public class LoginService {
     private static final String SALT = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c";
 
 
-    public String getAccessToken(){
-        return response.getResponse().getAccess_token();
+
+    public String getAccessToken(String username){
+        return loginSession.get(username).getResponse().getAccess_token();
     }
 
-    public LoginResponse login(){
+    public String getAccessToken(){
+        return getAccessToken(USERNAME);
+    }
+
+    public LoginResponse login(String username, String password){
+        log.info("trying login with account: {}", username);
+
         MultiValueMap<String, String> body = basicLoginRequestBody();
         body.add("grant_type", TYPE_PASSWORD);
-        body.add("username", USERNAME);
-        body.add("password", PASSWORD);
-        return authApi.login(body);
-    }
+        body.add("username", username);
+        body.add("password", password);
 
-    public LoginResponse refreshToken(){
-        MultiValueMap<String, String> body = basicLoginRequestBody();
-        body.add("grant_type", TYPE_REFRESH);
-        body.add("refresh_token", response.getResponse().getRefresh_token());
-        response = authApi.refreshToken(body);
+        LoginResponse response = authApi.login(body);
+        loginSession.put(username, response);
+        log.info("login success, get token >>> {}", response.getResponse().getAccess_token());
         return response;
     }
 
+
+    public LoginResponse refreshToken(String username){
+        log.info("trying refresh access token of user: {}.", username);
+
+        MultiValueMap<String, String> body = basicLoginRequestBody();
+        body.add("grant_type", TYPE_REFRESH);
+        body.add("refresh_token", loginSession.get(username).getResponse().getRefresh_token());
+        LoginResponse loginResponse = authApi.refreshToken(body);
+        loginSession.put(username, loginResponse);
+
+        log.info("got >> {}", loginResponse.getResponse().getAccess_token());
+
+        return loginResponse;
+    }
+
+    public LoginResponse refreshTokenDefault(){
+        return refreshToken(USERNAME);
+    }
+
+
     @Scheduled(cron = "0 0 * * * ?")
     private void autoRefresh(){
-        log.info("trying auto refresh.");
-        refreshToken();
+        log.info("auto refresh start.");
+        for (String username : loginSession.keySet()){
+            refreshToken(username);
+        }
+        log.info("auto refresh finish.");
     }
 
     private static MultiValueMap<String, String> basicLoginRequestBody(){

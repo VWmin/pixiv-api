@@ -1,10 +1,7 @@
 package com.vwmin.pixivapi;
 
 import com.vwmin.pixivapi.controller.LogInterceptor;
-import com.vwmin.pixivapi.service.AppApi;
-import com.vwmin.pixivapi.service.AppService;
-import com.vwmin.pixivapi.service.AuthApi;
-import com.vwmin.pixivapi.service.LoginService;
+import com.vwmin.pixivapi.service.*;
 import com.vwmin.restproxy.RestProxy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
@@ -33,9 +30,9 @@ public class AppConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public AppApi appApi(LoginService loginService){
+    public AppApi appApi(AppAccessRightInterceptor interceptor){
         RestTemplate restTemplate = new RestTemplate();
-        restTemplate.getInterceptors().add(new AppService.AppAccessRightInterceptor(loginService));
+        restTemplate.getInterceptors().add(interceptor);
         String url = "https://app-api.pixiv.net";
         return new RestProxy<>(url, AppApi.class, restTemplate).getApi();
     }
