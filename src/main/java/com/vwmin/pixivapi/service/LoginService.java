@@ -14,8 +14,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -34,10 +37,13 @@ public class LoginService {
     private final AuthApi authApi;
     private final Map<String, LoginResponse> loginSession = new ConcurrentHashMap<>();
 
-    public LoginService(AuthApi authApi){
+    public LoginService(AuthApi authApi) {
         this.authApi = authApi;
-        login(USERNAME, PASSWORD); //登录默认账号
+        loginByCode();
     }
+
+    private static final String WEB_LOGIN_HEAD = "https://app-api.pixiv.net/web/v1/login?code_challenge=";
+    private static final String WEB_LOGIN_END = "&code_challenge_method=S256&client=pixiv-android";
 
     // bodies
     private static final String CLIENT_ID = "MOBrBDS8blbauoSck0ZfDbtuzpyT";
@@ -46,29 +52,26 @@ public class LoginService {
     private static final String TYPE_PASSWORD = "password";
     private static final String TYPE_REFRESH = "refresh_token";
     private static final String USERNAME = "787236989";
-    private static final String PASSWORD = "1903215898";
+    private static final String REDIRECT_URL = "https://app-api.pixiv.net/web/v1/users/auth/pixiv/callback";
+    private static final String TYPE_CODE = "authorization_code";
+
 
     // headers
-    private static final String USER_AGENT = "PixivAndroidApp/5.0.175 (Android 9; ONEPLUS A6013)";
-    private static final String ACCEPT_LANGUAGE = "zh_cn";
     private static final String APP_OS = "android";
     private static final String APP_OS_VERSION = "5.0.175";
     private static final String ACCEPT_ENCODING = "gzip";
 
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZZZ", Locale.CHINA);
-    private static final String SALT = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c";
 
-
-
-    public String getAccessToken(String username){
+    public String getAccessToken(String username) {
         return loginSession.get(username).getResponse().getAccess_token();
     }
 
-    public String getAccessToken(){
+    public String getAccessToken() {
         return getAccessToken(USERNAME);
     }
 
-    public LoginResponse login(String username, String password){
+    @Deprecated
+    public LoginResponse login(String username, String password) {
         log.info("trying login with account: {}", username);
 
         MultiValueMap<String, String> body = basicLoginRequestBody();
@@ -82,8 +85,32 @@ public class LoginService {
         return response;
     }
 
+    public LoginResponse loginByCode() {
+        String loginUrl = WEB_LOGIN_HEAD + PkceUtil.getInstance().getCodeChallenge() + WEB_LOGIN_END;
+        log.info("拿去登录 >>> {}", loginUrl);
 
-    public LoginResponse refreshToken(String username){
+        BufferedReader scanner = new BufferedReader(new InputStreamReader(System.in));
+        String code = null;
+        try {
+            code = scanner.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("获取输入失败");
+        }
+
+
+        LoginResponse loginResponse = authApi.code2Token(code, REDIRECT_URL, TYPE_CODE,
+                true, CLIENT_ID, PkceUtil.getInstance().getCodeVerifier(), CLIENT_SECRET);
+
+        loginSession.put(loginResponse.getResponse().getUser().getName(), loginResponse);
+        log.info("login success, get token >>> {}", loginResponse.getResponse().getAccess_token());
+
+        return loginResponse;
+
+    }
+
+
+    public LoginResponse refreshToken(String username) {
         log.info("trying refresh access token of user: {}.", username);
 
         MultiValueMap<String, String> body = basicLoginRequestBody();
@@ -97,21 +124,21 @@ public class LoginService {
         return loginResponse;
     }
 
-    public LoginResponse refreshTokenDefault(){
+    public LoginResponse refreshTokenDefault() {
         return refreshToken(USERNAME);
     }
 
 
     @Scheduled(cron = "0 0 * * * ?")
-    private void autoRefresh(){
+    private void autoRefresh() {
         log.info("auto refresh start.");
-        for (String username : loginSession.keySet()){
+        for (String username : loginSession.keySet()) {
             refreshToken(username);
         }
         log.info("auto refresh finish.");
     }
 
-    private static MultiValueMap<String, String> basicLoginRequestBody(){
+    private static MultiValueMap<String, String> basicLoginRequestBody() {
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>(8);
         body.add("client_id", CLIENT_ID);
         body.add("client_secret", CLIENT_SECRET);
@@ -122,7 +149,14 @@ public class LoginService {
     }
 
 
-    public static class PixivLoginInterceptor implements ClientHttpRequestInterceptor{
+    public static class PixivLoginInterceptor implements ClientHttpRequestInterceptor {
+
+        private static final String USER_AGENT = "PixivAndroidApp/5.0.175 (Android 9; ONEPLUS A6013)";
+        private static final String ACCEPT_LANGUAGE = "zh_cn";
+
+        private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZZZ", Locale.CHINA);
+        private static final String SALT = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c";
+
 
         @Override
         public ClientHttpResponse intercept(HttpRequest request, byte[] body,

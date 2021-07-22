@@ -75,12 +75,15 @@ public class AppController {
         return appService.trend();
     }
 
-    @GetMapping("/login")
+//    @GetMapping("/login")
+    @Deprecated
     public String login(@RequestParam String username,
                         @RequestParam String password){
         LoginResponse login = loginService.login(username, password);
         return login.getResponse().getAccess_token();
     }
+
+
 
 
     @GetMapping("/refresh")

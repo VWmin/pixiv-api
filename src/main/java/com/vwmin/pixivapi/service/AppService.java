@@ -57,21 +57,4 @@ public class AppService {
     }
 
 
-
-//    public static class AppAccessRightInterceptor implements ClientHttpRequestInterceptor{
-//
-//        private final LoginService loginService;
-//
-//        public AppAccessRightInterceptor(LoginService loginService){
-//            this.loginService = loginService;
-//        }
-//
-//
-//        @Override
-//        public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
-//            HttpHeaders headers = request.getHeaders();
-//            headers.add("Authorization", "Bearer "+ loginService.getAccessToken());
-//            return execution.execute(request, body);
-//        }
-//    }
 }
